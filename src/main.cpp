@@ -9,13 +9,11 @@
 #include <vector>
 
 // IMAGES
-#include "images/tabby_paw_480.h"
 #include "images/tabby_needle.h"
 #include "images/tabby_needle_shadow.h"
 #include "images/tabby_tick.h"
 #include "images/tabby_tick_shadow.h"
 
-LV_IMG_DECLARE(tabby_paw_480);
 LV_IMG_DECLARE(tabby_needle);
 LV_IMG_DECLARE(tabby_needle_shadow);
 LV_IMG_DECLARE(tabby_tick);
