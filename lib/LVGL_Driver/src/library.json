@@ -1,0 +1,10 @@
+{
+  "name": "LVGL_Driver",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "name": "lvgl",
+      "version": "^9.3.0"
+    }
+  ]
+}

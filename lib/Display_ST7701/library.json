@@ -1,0 +1,10 @@
+{
+  "name": "Display_ST7701",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "name": "lvgl",
+      "version": "^9.3.0"
+    }
+  ]
+}
