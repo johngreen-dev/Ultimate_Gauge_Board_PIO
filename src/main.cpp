@@ -8,20 +8,9 @@
 #include "I2C_Driver.h"
 #include <vector>
 
-// IMAGES
-#include "images/tabby_needle.h"
-#include "images/tabby_needle_shadow.h"
-#include "images/tabby_tick.h"
-#include "images/tabby_tick_shadow.h"
-
-LV_IMG_DECLARE(tabby_needle);
-LV_IMG_DECLARE(tabby_needle_shadow);
-LV_IMG_DECLARE(tabby_tick);
-LV_IMG_DECLARE(tabby_tick_shadow);
-
-// FONTS
-#include "fonts/code_sb_100.h"
-#include "fonts/code_r_30.h"
+// EEZ Studio UI
+#include "ui/ui.h"
+#include "ui/vars.h"
 
 // DATA STORE
 typedef struct struct_gauge_data {
@@ -33,25 +22,12 @@ struct_gauge_data GaugeData;
 
 // CONTROL CONSTANTS
 const int AVERAGE_VALUES      = 20;
-const int SCALE_MIN           = -20;
-const int SCALE_MAX           = 140;
-const int SCALE_TICKS_COUNT   = 9;
 
 // CONTROL VARIABLE INIT
 bool initial_load             = false; // has the first data been received
 volatile bool data_ready      = false; // new incoming data
-bool init_anim_complete       = false; // needle sweep completed
 
 uint8_t average_coolant_temp  = 0;
-
-// GLOBAL COMPONENTS
-lv_obj_t *main_scr;
-lv_obj_t *scale;
-lv_obj_t *needle_img;
-lv_obj_t *needle_img_shadow;
-
-lv_obj_t *scale_ticks[SCALE_TICKS_COUNT];
-lv_obj_t* scale_tick_shadow[SCALE_TICKS_COUNT];
 
 void Drivers_Init(void) {
   I2C_Init();
@@ -102,10 +78,14 @@ uint8_t Get_Moving_Average(int new_value) {
 void Update_Coolant_Temp(void) {
   // use a moving average of the last x values for smoothing
   average_coolant_temp = Get_Moving_Average(GaugeData.coolant_temp);
-  if (init_anim_complete) {
-    //lv_scale_set_image_needle_value(scale, needle_img_shadow, average_coolant_temp);
-    lv_scale_set_image_needle_value(scale, needle_img, average_coolant_temp);
-  }
+  
+  // Update EEZ Studio UI variables
+  set_var_temp_arc_var(average_coolant_temp);
+  
+  // Format temperature string
+  char temp_str[32];
+  snprintf(temp_str, sizeof(temp_str), "%d°C", average_coolant_temp);
+  set_var_temp_str_var(temp_str);
 }
 
 // update parts with incoming values
@@ -113,146 +93,10 @@ void Update_Values(void) {
   Update_Coolant_Temp();
 }
 
-// update the UI with the latest value
-static void Set_Needle_Img_Value(void * obj, int32_t v) {
-  //lv_scale_set_image_needle_value(scale, needle_img_shadow, v);  
-  lv_scale_set_image_needle_value(scale, needle_img, v);
-}
-
-// mark the loader as complete
-void Needle_Sweep_Complete(lv_anim_t *a) {
-    init_anim_complete = true;
-}
-
-// scroll the needle from 0 to the current value
-void Needle_To_Current(lv_anim_t *a) {
-  lv_anim_t anim_scale_img;
-  lv_anim_init(&anim_scale_img);
-  lv_anim_set_var(&anim_scale_img, scale);
-  lv_anim_set_exec_cb(&anim_scale_img, Set_Needle_Img_Value);
-  lv_anim_set_duration(&anim_scale_img, 1000);  
-  lv_anim_path_ease_out(&anim_scale_img);
-  lv_anim_set_values(&anim_scale_img, -20, average_coolant_temp);
-  lv_anim_set_ready_cb(&anim_scale_img, Needle_Sweep_Complete);
-  lv_anim_start(&anim_scale_img);
-}
-
-// 0 to max to 0 sweep on load
-void Needle_Sweep() {
-  lv_anim_t anim_scale_img;
-  lv_anim_init(&anim_scale_img);
-  lv_anim_set_var(&anim_scale_img, scale);
-  lv_anim_set_exec_cb(&anim_scale_img, Set_Needle_Img_Value);
-  lv_anim_set_duration(&anim_scale_img, 2000);
-  lv_anim_set_repeat_count(&anim_scale_img, 1);
-  lv_anim_set_playback_duration(&anim_scale_img, 1000);
-  lv_anim_set_values(&anim_scale_img, SCALE_MIN, SCALE_MAX);
-  lv_anim_set_ready_cb(&anim_scale_img, Needle_To_Current);
-  lv_anim_start(&anim_scale_img);
-
-    // back and forth sweep
-    // lv_anim_t anim_scale_img;
-    // lv_anim_init(&anim_scale_img);
-    // lv_anim_set_var(&anim_scale_img, scale);
-    // lv_anim_set_exec_cb(&anim_scale_img, Set_Needle_Img_Value);
-    // lv_anim_set_duration(&anim_scale_img, 10000);
-    // lv_anim_set_repeat_count(&anim_scale_img, LV_ANIM_REPEAT_INFINITE);
-    // lv_anim_set_playback_duration(&anim_scale_img, 10000);
-    // lv_anim_set_values(&anim_scale_img, -20, 140);
-    // lv_anim_start(&anim_scale_img);
-}
-
-void Make_Scale_Ticks(void) {
-  for (int i = 0; i < SCALE_TICKS_COUNT; i++) {
-        // unnecessary shadow whilst using black background
-      
-        // scale_tick_shadow[i] = lv_image_create(main_scr);
-        // lv_image_set_src(scale_tick_shadow[i], &tabby_tick_shadow);
-        // lv_obj_align(scale_tick_shadow[i], LV_ALIGN_CENTER, 0, 200);
-        // lv_image_set_pivot(scale_tick_shadow[i], 12, -188);
-
-        scale_ticks[i] = lv_image_create(main_scr);
-        lv_image_set_src(scale_ticks[i], &tabby_tick);
-        lv_obj_align(scale_ticks[i], LV_ALIGN_CENTER, 0, 200);
-        lv_image_set_pivot(scale_ticks[i], 12, -188);
-
-        lv_obj_set_style_image_recolor_opa(scale_ticks[i], 255, 0);
-        lv_obj_set_style_image_recolor(scale_ticks[i], lv_color_make(255,255,255), 0); // TO DO - replace with color from CAN 
-
-        int rotation_angle = (((i) * (240 / (SCALE_TICKS_COUNT - 1))) * 10); // angle calculation
-
-        //lv_image_set_rotation(scale_tick_shadow[i], rotation_angle);
-        lv_image_set_rotation(scale_ticks[i], rotation_angle);
-    }
-}
-
-// create the elements on the main scr
-void Main_Scr_UI(void) {
-   
-    // display image background
-    // lv_obj_t* img = lv_img_create(main_scr);
-    // lv_img_set_src(img, &tabby_paw_480);
-    // lv_obj_center(img);
-
-    // scale used for needle
-    scale = lv_scale_create(main_scr);
-    lv_obj_set_size(scale, 480, 480);
-    lv_scale_set_mode(scale, LV_SCALE_MODE_ROUND_INNER);
-    lv_obj_set_style_bg_opa(scale, LV_OPA_0, 0);
-    lv_scale_set_total_tick_count(scale, 0);
-    lv_scale_set_label_show(scale, false);
-    lv_obj_center(scale);
-    lv_scale_set_range(scale, SCALE_MIN, SCALE_MAX);
-    lv_scale_set_angle_range(scale, 240);
-    lv_scale_set_rotation(scale, 90);
-
-    lv_obj_t *lower_arc = lv_arc_create(main_scr);
-    lv_obj_set_size(lower_arc, 412, 412);
-    lv_arc_set_bg_angles(lower_arc, 90, 90 + (240 / (SCALE_TICKS_COUNT - 1)));
-    lv_arc_set_value(lower_arc, 0);
-    lv_obj_center(lower_arc);
-    lv_obj_set_style_opa(lower_arc, 0, LV_PART_KNOB);
-    lv_obj_set_style_arc_color(lower_arc, lv_color_make(87,10,1), LV_PART_MAIN);
-    lv_obj_set_style_arc_width(lower_arc, 16, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(lower_arc, false, LV_PART_MAIN);
-
-    lv_obj_t *upper_arc = lv_arc_create(main_scr);
-    lv_obj_set_size(upper_arc, 412, 412);
-    lv_arc_set_bg_angles(upper_arc, 330 - (240 / (SCALE_TICKS_COUNT - 1)), 330);
-    lv_arc_set_value(upper_arc, 0);
-    lv_obj_center(upper_arc);
-    lv_obj_set_style_opa(upper_arc, 0, LV_PART_KNOB);
-    lv_obj_set_style_arc_color(upper_arc, lv_color_make(87,10,1), LV_PART_MAIN);
-    lv_obj_set_style_arc_width(upper_arc, 16, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(upper_arc, false, LV_PART_MAIN);
-    
-    
-    Make_Scale_Ticks();
-    
-    
-    // needle image
-    int needle_center_shift = 40; // how far the center of the needle is shifted from the left edge
-    // needle_img_shadow = lv_image_create(scale);
-    // lv_image_set_src(needle_img_shadow, &tabby_needle_shadow);
-    // lv_obj_align(needle_img_shadow, LV_ALIGN_CENTER, 108 - needle_center_shift, 0);
-    // lv_image_set_pivot(needle_img_shadow, needle_center_shift, 36);
-   
-    needle_img = lv_image_create(scale);
-    lv_image_set_src(needle_img, &tabby_needle);
-    lv_obj_align(needle_img, LV_ALIGN_CENTER, 108 - needle_center_shift, 0);
-    lv_image_set_pivot(needle_img, needle_center_shift, 36);
-
-    lv_obj_set_style_image_recolor_opa(needle_img, 255, 0);
-    lv_obj_set_style_image_recolor(needle_img, lv_color_make(255,255,255), 0); // TO DO - replace with color from CAN 
-}
-
 // build the screens
 void Screens_Init(void) {
-  main_scr = lv_obj_create(NULL);
-  lv_obj_set_style_bg_color(main_scr, lv_color_make(0,0,0), 0);
-  lv_screen_load(main_scr);
-
-  Main_Scr_UI();
+  // Initialize EEZ Studio UI
+  ui_init();
 }
 
 void Process_Coolant_Temp(uint8_t *byte_data) {
@@ -314,7 +158,6 @@ void setup(void) {
   Set_Backlight(50);
 
   Screens_Init();
-  Needle_Sweep();
   Set_EXIO(EXIO_PIN4, Low);
 
   xTaskCreate(Receive_CAN_Task, "Receive_CAN_Task", 2048, NULL, 1, NULL);
@@ -323,6 +166,7 @@ void setup(void) {
 
 void loop(void) {
   lv_timer_handler();
+  ui_tick(); // EEZ Studio UI tick
 
   if (data_ready) {
     data_ready = false;
