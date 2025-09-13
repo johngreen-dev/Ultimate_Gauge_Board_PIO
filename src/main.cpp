@@ -86,6 +86,13 @@ void Update_Coolant_Temp(void) {
   char temp_str[32];
   snprintf(temp_str, sizeof(temp_str), "%d°C", average_coolant_temp);
   set_var_temp_str_var(temp_str);
+  if (average_coolant_temp < 60) {
+    set_var_led_var(0); // off
+  } else if (average_coolant_temp < 80) {
+    set_var_led_var(128); // half brightness
+  } else {
+    set_var_led_var(255); // full brightness
+  }
 }
 
 // update parts with incoming values
@@ -160,7 +167,7 @@ void setup(void) {
   Screens_Init();
   Set_EXIO(EXIO_PIN4, Low);
 
-  xTaskCreate(Receive_CAN_Task, "Receive_CAN_Task", 2048, NULL, 1, NULL);
+  xTaskCreate(Receive_CAN_Task, "Receive_CAN_Task", 8192, NULL, 1, NULL);
   Serial.print("setup complete");
 }
 
